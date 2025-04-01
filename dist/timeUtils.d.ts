@@ -1,5 +1,8 @@
 import { TimeTypes } from './enums/time.js';
 import type { DurationTimeComponents, ParsedDoyString, ParsedDurationString, ParsedYmdString } from './types/time.js';
+export * from './constants/time.js';
+export * from './types/time.js';
+export * from './enums/time.js';
 /**
  * Validates a time string based on the specified type.
  * @param {string} time - The time string to validate.
