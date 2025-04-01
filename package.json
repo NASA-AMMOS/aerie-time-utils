@@ -1,0 +1,32 @@
+{
+  "name": "@nasa-jpl/aerie-time-utils",
+  "version": "1.0.0",
+  "title": "Aerie Time Utility",
+  "description": "Provide helper functions to process an array of time values within the aerie ecosystem",
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NASA-AMMOS/aerie-time-utils"
+  },
+  "main": "dist/timeUtils.js",
+  "module": "dist/timeUtils.mjs",
+  "types": "dist/timeUtils.d.ts",
+  "files": ["dist/"],
+  "scripts": {
+    "build" : "tsc",
+    "test": "vitest run",
+    "clean": "rm -rf ./dist"
+  },
+  "keywords": [],
+  "dependencies": {
+    "lodash-es": "^4.17.21",
+    "postgres-interval": "^4.0.2",
+    "vitest": "^3.1.1"
+  },
+  "devDependencies": {
+    "@types/lodash-es": "^4.17.12",
+    "@types/node": "^22.13.16",
+    "typescript": "^5.8.2"
+  }
+}
