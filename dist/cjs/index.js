@@ -18,3 +18,4 @@ __exportStar(require("./src/timeUtils"), exports);
 __exportStar(require("./src/constants/time.js"), exports);
 __exportStar(require("./src/types/time.js"), exports);
 __exportStar(require("./src/enums/time.js"), exports);
+//# sourceMappingURL=index.js.map

@@ -1,40 +1,7 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateTime = validateTime;
-exports.isTimeMax = isTimeMax;
-exports.isTimeBalanced = isTimeBalanced;
-exports.parseDurationString = parseDurationString;
-exports.getBalancedDuration = getBalancedDuration;
-exports.convertDoyToYmd = convertDoyToYmd;
-exports.convertDurationStringToPGInterval = convertDurationStringToPGInterval;
-exports.pgUTCToMs = pgUTCToMs;
-exports.convertDurationStringToUs = convertDurationStringToUs;
-exports.convertUsToDurationString = convertUsToDurationString;
-exports.getDaysInMonth = getDaysInMonth;
-exports.getDaysInYear = getDaysInYear;
-exports.getDoy = getDoy;
-exports.getDoyTimeComponents = getDoyTimeComponents;
-exports.getDurationTimeComponents = getDurationTimeComponents;
-exports.getDoyTime = getDoyTime;
-exports.getDoyTimeFromInterval = getDoyTimeFromInterval;
-exports.getPBIntervalInMs = getPBIntervalInMs;
-exports.getPBIntervalFromDoyRange = getPBIntervalFromDoyRange;
-exports.getPGIntervalUnixEpochTime = getPGIntervalUnixEpochTime;
-exports.getUnixEpochTime = getUnixEpochTime;
-exports.getUnixEpochTimeFromPGInterval = getUnixEpochTimeFromPGInterval;
-exports.parseDoyOrYmdTime = parseDoyOrYmdTime;
-exports.getTimeAgo = getTimeAgo;
-exports.getShortISOForDate = getShortISOForDate;
-exports.getShortTimeZoneName = getShortTimeZoneName;
-exports.getTimeZoneName = getTimeZoneName;
-exports.removeDateStringMilliseconds = removeDateStringMilliseconds;
-const lodash_es_1 = require("lodash-es");
-const postgres_interval_1 = __importDefault(require("postgres-interval"));
-const time_js_1 = require("./constants/time.js");
-const time_js_2 = require("./enums/time.js");
+import { padStart } from 'lodash-es';
+import parseInterval from 'postgres-interval';
+import { ABSOLUTE_TIME, EPOCH_SIMPLE, EPOCH_TIME, RELATIVE_SIMPLE, RELATIVE_TIME } from './constants/time.js';
+import { TimeTypes } from './enums/time.js';
 /**
  * Validates a time string based on the specified type.
  * @param {string} time - The time string to validate.
@@ -46,18 +13,18 @@ const time_js_2 = require("./enums/time.js");
  * validateTime('P1DT2H30M', TimeTypes.ABSOLUTE); // returns false
  * validateTime('invalid-string', TimeTypes.ABSOLUTE); // returns false
  */
-function validateTime(time, type) {
+export function validateTime(time, type) {
     switch (type) {
-        case time_js_2.TimeTypes.ABSOLUTE:
-            return time_js_1.ABSOLUTE_TIME.exec(time) !== null;
-        case time_js_2.TimeTypes.EPOCH:
-            return time_js_1.EPOCH_TIME.exec(time) !== null;
-        case time_js_2.TimeTypes.RELATIVE:
-            return time_js_1.RELATIVE_TIME.exec(time) !== null;
-        case time_js_2.TimeTypes.EPOCH_SIMPLE:
-            return time_js_1.EPOCH_SIMPLE.exec(time) !== null;
-        case time_js_2.TimeTypes.RELATIVE_SIMPLE:
-            return time_js_1.RELATIVE_SIMPLE.exec(time) !== null;
+        case TimeTypes.ABSOLUTE:
+            return ABSOLUTE_TIME.exec(time) !== null;
+        case TimeTypes.EPOCH:
+            return EPOCH_TIME.exec(time) !== null;
+        case TimeTypes.RELATIVE:
+            return RELATIVE_TIME.exec(time) !== null;
+        case TimeTypes.EPOCH_SIMPLE:
+            return EPOCH_SIMPLE.exec(time) !== null;
+        case TimeTypes.RELATIVE_SIMPLE:
+            return RELATIVE_SIMPLE.exec(time) !== null;
         default:
             return false;
     }
@@ -73,14 +40,14 @@ function validateTime(time, type) {
  * isTimeMax('-365T23:59:60.999', TimeTypes.EPOCH)) // true
 
  */
-function isTimeMax(time, type) {
+export function isTimeMax(time, type) {
     switch (type) {
-        case time_js_2.TimeTypes.ABSOLUTE: {
+        case TimeTypes.ABSOLUTE: {
             const year = parseDoyOrYmdTime(getDoyTime(new Date(getUnixEpochTime(time))))?.year;
             return year ? year > 9999 : true;
         }
-        case time_js_2.TimeTypes.EPOCH:
-        case time_js_2.TimeTypes.RELATIVE: {
+        case TimeTypes.EPOCH:
+        case TimeTypes.RELATIVE: {
             const duration = parseDurationString(time);
             const originalYear = parseInt(convertDurationToDoy(duration).slice(0, 4));
             const year = parseDoyOrYmdTime(getDoyTime(new Date(getUnixEpochTime(convertDurationToDoy(duration)))))?.year;
@@ -99,9 +66,9 @@ function isTimeMax(time, type) {
  * isTimeBalanced('2022-01-01T00:00:00.000', TimeTypes.ABSOLUTE); // true
  * isTimeBalanced('50000d', TimeTypes.RELATIVE); // false
  */
-function isTimeBalanced(time, type) {
+export function isTimeBalanced(time, type) {
     switch (type) {
-        case time_js_2.TimeTypes.ABSOLUTE: {
+        case TimeTypes.ABSOLUTE: {
             const balancedTime = parseDoyOrYmdTime(getDoyTime(new Date(getUnixEpochTime(time))));
             const originalTime = parseDoyOrYmdTime(time);
             if (balancedTime === null || originalTime === null) {
@@ -109,8 +76,8 @@ function isTimeBalanced(time, type) {
             }
             return originalTime.year === balancedTime.year;
         }
-        case time_js_2.TimeTypes.EPOCH:
-        case time_js_2.TimeTypes.RELATIVE: {
+        case TimeTypes.EPOCH:
+        case TimeTypes.RELATIVE: {
             const originalTime = parseDurationString(time);
             const balancedTime = parseDurationString(getBalancedDuration(time));
             if (balancedTime === null || originalTime === null) {
@@ -185,7 +152,7 @@ function isTimeBalanced(time, type) {
  * // => }
  *
  */
-function parseDurationString(durationString, units = 'microseconds') {
+export function parseDurationString(durationString, units = 'microseconds') {
     const validNegationRegex = `((?<isNegative>-))?`;
     const validDurationValueRegex = `([+-]?)(\\d+)(\\.\\d+)?`;
     const validYearsDurationRegex = `(?:\\s*(?<years>${validDurationValueRegex})y)`;
@@ -326,7 +293,7 @@ function convertDurationToDoy(duration) {
  * getBalancedDuration('+190')) //=> '00:03:10.000'
  *
  */
-function getBalancedDuration(time) {
+export function getBalancedDuration(time) {
     const duration = parseDurationString(time, 'seconds');
     const balancedTime = getDoyTime(new Date(getUnixEpochTime(convertDurationToDoy(duration))));
     const parsedBalancedTime = parseDoyOrYmdTime(balancedTime);
@@ -358,15 +325,15 @@ function addUnit(value, unit, isNegative) {
  * convertDoyToYmd('2023-154T12:34:56.789', false) // returns '2023-05-30T12:34:56Z'
  * convertDoyToYmd('2023-05-30T12:34:56') // returns '2023-05-30T12:34:56Z'
  */
-function convertDoyToYmd(doyString, includeMsecs = true) {
+export function convertDoyToYmd(doyString, includeMsecs = true) {
     const parsedDoy = parseDoyOrYmdTime(doyString);
     if (parsedDoy !== null) {
         if (parsedDoy.doy !== undefined) {
             const date = new Date(parsedDoy.year, 0, parsedDoy.doy);
             const ymdString = `${[
                 date.getFullYear(),
-                (0, lodash_es_1.padStart)(`${date.getUTCMonth() + 1}`, 2, '0'),
-                (0, lodash_es_1.padStart)(`${date.getUTCDate()}`, 2, '0'),
+                padStart(`${date.getUTCMonth() + 1}`, 2, '0'),
+                padStart(`${date.getUTCDate()}`, 2, '0'),
             ].join('-')}T${parsedDoy.time}`;
             if (includeMsecs) {
                 return `${ymdString}Z`;
@@ -392,7 +359,7 @@ function convertDoyToYmd(doyString, includeMsecs = true) {
  * @example
  * convertDurationStringToInterval('8d 6h 16m') // returns '8 days 6 hours 16 minutes'
  */
-function convertDurationStringToPGInterval(durationString) {
+export function convertDurationStringToPGInterval(durationString) {
     const parsedDuration = parseDurationString(convertUsToDurationString(convertDurationStringToUs(durationString)));
     const { isNegative, years, days, hours, minutes, seconds, milliseconds, microseconds } = parsedDuration;
     const yearsString = years ? addUnit(years, 'year', isNegative) : '';
@@ -426,7 +393,7 @@ function convertDurationStringToPGInterval(durationString) {
  * pgUTCToMs('2023-10-05T14:30:00') // returns 1633446600000
  *
  */
-function pgUTCToMs(date) {
+export function pgUTCToMs(date) {
     const d = new Date(date);
     return d.getTime();
 }
@@ -448,7 +415,7 @@ function pgUTCToMs(date) {
  * @note This function is the inverse of `convertUsToDurationString`.
  *
  */
-function convertDurationStringToUs(durationString) {
+export function convertDurationStringToUs(durationString) {
     const usPerYear = 3.154e13;
     const usPerDay = 8.64e10;
     const usPerHour = 3.6e9;
@@ -481,7 +448,7 @@ function convertDurationStringToUs(durationString) {
 
  * @note inverse of convertDurationStringToUs
  */
-function convertUsToDurationString(durationUs, includeZeros = false) {
+export function convertUsToDurationString(durationUs, includeZeros = false) {
     const usPerYear = 3.154e13;
     const usPerDay = 8.64e10;
     const usPerHour = 3.6e9;
@@ -543,7 +510,7 @@ function convertUsToDurationString(durationUs, includeZeros = false) {
  * getDaysInMonth(2020, 5); // returns 3 (June has 3 days? Wait, that's not correct. June should have 30 days.)
  * getDaysInMonth(2020, 1); // returns 29 (February in a leap year)
  */
-function getDaysInMonth(year, month) {
+export function getDaysInMonth(year, month) {
     const lastOfMonth = new Date(Date.UTC(year, month + 1, 0));
     return lastOfMonth.getUTCDate();
 }
@@ -561,7 +528,7 @@ function getDaysInMonth(year, month) {
  * getDaysInYear(2023); // 365
  * getDaysInYear(2024); // 366
  */
-function getDaysInYear(year) {
+export function getDaysInYear(year) {
     let daysInYear = 0;
     for (let month = 0; month < 12; month++) {
         daysInYear += getDaysInMonth(year, month);
@@ -579,7 +546,7 @@ function getDaysInYear(year) {
  *
  * @see {@link https://stackoverflow.com/a/8619946}
  */
-function getDoy(date) {
+export function getDoy(date) {
     const start = Date.UTC(date.getUTCFullYear(), 0, 0);
     const diff = date.getTime() - start;
     const oneDay = 8.64e7; // Number of milliseconds in a day.
@@ -612,7 +579,7 @@ function getDoy(date) {
  * //   year: '2023'
  * // }
  */
-function getDoyTimeComponents(date) {
+export function getDoyTimeComponents(date) {
     return {
         doy: getDoy(date).toString().padStart(3, '0'),
         hours: date.getUTCHours().toString().padStart(2, '0'),
@@ -645,7 +612,7 @@ function getDoyTimeComponents(date) {
  * // }
  *
  */
-function getDurationTimeComponents(duration) {
+export function getDurationTimeComponents(duration) {
     return {
         days: duration.days !== 0 ? String(duration.days).padStart(3, '0') : '',
         hours: duration.hours.toString().padStart(2, '0'),
@@ -672,7 +639,7 @@ function getDurationTimeComponents(duration) {
  * @note Inverse of getUnixEpochTime.
  * @note Milliseconds will be dropped if they are all zeros or if includeMsecs is false.
  */
-function getDoyTime(date, includeMsecs = true) {
+export function getDoyTime(date, includeMsecs = true) {
     const { doy, hours, mins, msecs, secs, year } = getDoyTimeComponents(date);
     let doyTimestamp = `${year}-${doy}T${hours}:${mins}:${secs}`;
     if (includeMsecs && date.getMilliseconds() > 0) {
@@ -696,9 +663,9 @@ function getDoyTime(date, includeMsecs = true) {
  *
  * @note Requires a `parseInterval` function to be available in scope.
  */
-function getDoyTimeFromInterval(startTime, interval, includeMsecs = true) {
+export function getDoyTimeFromInterval(startTime, interval, includeMsecs = true) {
     const startDate = new Date(startTime);
-    const parsedInterval = (0, postgres_interval_1.default)(interval);
+    const parsedInterval = parseInterval(interval);
     const { days, hours, milliseconds, minutes, seconds } = parsedInterval;
     const endDate = new Date(startDate.getTime());
     endDate.setUTCDate(endDate.getUTCDate() + days);
@@ -729,9 +696,9 @@ function getDoyTimeFromInterval(startTime, interval, includeMsecs = true) {
  * @note Requires a `parseInterval` function to be available in scope.
  *
  */
-function getPBIntervalInMs(interval) {
+export function getPBIntervalInMs(interval) {
     if (interval !== null && interval !== undefined && interval !== '') {
-        const parsedInterval = (0, postgres_interval_1.default)(interval);
+        const parsedInterval = parseInterval(interval);
         const { days, hours, milliseconds, minutes, seconds } = parsedInterval;
         const daysInMs = days * 24 * 60 * 60 * 1000;
         const hoursInMs = hours * 60 * 60 * 1000;
@@ -755,7 +722,7 @@ function getPBIntervalInMs(interval) {
  * console.log(interval); // Output: (e.g., "1 day 12 hours 30 minutes 45 seconds 123 milliseconds")
  *
  */
-function getPBIntervalFromDoyRange(startTime, endTime) {
+export function getPBIntervalFromDoyRange(startTime, endTime) {
     const startTimeMs = getUnixEpochTime(startTime);
     const endTimeMs = getUnixEpochTime(endTime);
     return getPGIntervalUnixEpochTime(startTimeMs, endTimeMs);
@@ -781,7 +748,7 @@ function getPBIntervalFromDoyRange(startTime, endTime) {
  *
  * @note This function returns a simplified interval format, without "days" or "years" components.
  */
-function getPGIntervalUnixEpochTime(startTimeMs, endTimeMs) {
+export function getPGIntervalUnixEpochTime(startTimeMs, endTimeMs) {
     const differenceMs = endTimeMs - startTimeMs;
     const isNegative = differenceMs < 0;
     const absoluteDifferenceMs = Math.abs(differenceMs);
@@ -809,7 +776,7 @@ function getPGIntervalUnixEpochTime(startTimeMs, endTimeMs) {
  *
  * @note Inverse of getDoyTime.
  */
-function getUnixEpochTime(doyTimestamp) {
+export function getUnixEpochTime(doyTimestamp) {
     const re = /(\d{4})-(\d{3})T(\d{2}):(\d{2}):(\d{2})\.?(\d{3})?/;
     const match = re.exec(doyTimestamp);
     if (match) {
@@ -833,7 +800,7 @@ function getUnixEpochTime(doyTimestamp) {
  * console.log(epochTime); // Output: (Unix epoch time in ms)
  *
  */
-function getUnixEpochTimeFromPGInterval(startTime, interval, includeMsecs = true) {
+export function getUnixEpochTimeFromPGInterval(startTime, interval, includeMsecs = true) {
     const doyTime = getDoyTimeFromInterval(startTime, interval, includeMsecs);
     return getUnixEpochTime(doyTime);
 }
@@ -851,7 +818,7 @@ function getUnixEpochTimeFromPGInterval(startTime, interval, includeMsecs = true
  * parseDoyOrYmdTime('invalid-string'); // returns null
  *
  */
-function parseDoyOrYmdTime(dateString, numDecimals = 6) {
+export function parseDoyOrYmdTime(dateString, numDecimals = 6) {
     const matches = (dateString ?? '').match(new RegExp(`^(?<year>\\d{4})-(?:(?<month>(?:[0]?[0-9])|(?:[1][0-2]))-(?<day>(?:[0-2]?[0-9])|(?:[3][0-1]))|(?<doy>\\d{1,3}))(?:T(?<time>(?<hour>[0-9]|[0-2][0-9])(?::(?<min>[0-9]|(?:[0-5][0-9])))?(?::(?<sec>[0-9]|(?:[0-5][0-9]))(?<dec>\\.\\d{1,${numDecimals}})?)?)?)?$`, 'i'));
     if (matches) {
         const msPerSecond = 1000;
@@ -895,8 +862,8 @@ function parseDoyOrYmdTime(dateString, numDecimals = 6) {
  * parseDOYDurationTime('invalid-string'); // returns null
  */
 function parseDOYDurationTime(doyTime) {
-    const isEpoch = validateTime(doyTime, time_js_2.TimeTypes.EPOCH);
-    const matches = isEpoch ? time_js_1.EPOCH_TIME.exec(doyTime) : time_js_1.RELATIVE_TIME.exec(doyTime);
+    const isEpoch = validateTime(doyTime, TimeTypes.EPOCH);
+    const matches = isEpoch ? EPOCH_TIME.exec(doyTime) : RELATIVE_TIME.exec(doyTime);
     if (matches !== null) {
         if (matches) {
             const { groups: { sign = '', doy = '0', hr = '0', mins = '0', secs = '0', ms = '0' } = {} } = matches;
@@ -934,7 +901,7 @@ function parseDOYDurationTime(doyTime) {
  * getTimeAgo(new Date(new Date().getTime() - 86400000), new Date()); // returns "YYYY-MM-DD" (where YYYY-MM-DD is the date from 24 hours ago)
  *
  */
-function getTimeAgo(date, comparisonDate = new Date(), formatAsDateAfterMS = 1000 * 60 * 60 * 23) {
+export function getTimeAgo(date, comparisonDate = new Date(), formatAsDateAfterMS = 1000 * 60 * 60 * 23) {
     const comparisonDateTime = comparisonDate.getTime();
     const diff = comparisonDateTime - date.getTime();
     if (diff < 1000) {
@@ -955,7 +922,7 @@ function getTimeAgo(date, comparisonDate = new Date(), formatAsDateAfterMS = 100
  * @example
  * getShortISOForDate(new Date("2023-05-23T00:30:09.597Z")); // returns '2023-05-23T00:30:09'
  */
-function getShortISOForDate(date) {
+export function getShortISOForDate(date) {
     return date.toISOString().slice(0, 19);
 }
 /**
@@ -966,7 +933,7 @@ function getShortISOForDate(date) {
  * @example
  * getShortTimeZoneName(); // returns "PST", "EST", or other short time zone name based on the user's locale.
  */
-function getShortTimeZoneName() {
+export function getShortTimeZoneName() {
     return new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' }).format(new Date());
 }
 /**
@@ -977,7 +944,7 @@ function getShortTimeZoneName() {
  * @example
  * getTimeZoneName(); // returns "PST", "EST", or other short time zone name based on the user's locale, or "UNK" if not available.
  */
-function getTimeZoneName() {
+export function getTimeZoneName() {
     // set up formatter
     const formatter = new Intl.DateTimeFormat(undefined, {
         timeZoneName: 'short',
@@ -1004,9 +971,10 @@ function getTimeZoneName() {
  * removeDateStringMilliseconds('invalid-string'); // returns 'invalid-string'
  *
  */
-function removeDateStringMilliseconds(dateString) {
-    if (validateTime(dateString, time_js_2.TimeTypes.ABSOLUTE)) {
+export function removeDateStringMilliseconds(dateString) {
+    if (validateTime(dateString, TimeTypes.ABSOLUTE)) {
         return dateString.split('.')[0];
     }
     return dateString;
 }
+//# sourceMappingURL=timeUtils.js.map

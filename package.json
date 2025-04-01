@@ -2,23 +2,38 @@
   "name": "@nasa-jpl/aerie-time-utils",
   "version": "1.0.0",
   "title": "Aerie Time Utility",
-  "description": "Provide helper functions to process an array of time values within the aerie ecosystem",
-  "author": "",
+  "description": "Provides helper functions to process time values within the Aerie ecosystem",
+  "author": "NASA/JPL",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/NASA-AMMOS/aerie-time-utils"
+    "url": "https://github.com/NASA-AMMOS/aerie-time-utils.git"
   },
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
-  "files": ["dist/"],
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js",
+      "types": "./dist/cjs/index.d.ts"
+    }
+  },
+  "files": [
+    "dist/"
+  ],
   "scripts": {
-    "build" : "tsc",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.esm.json",
     "test": "vitest run",
-    "clean": "rm -rf ./dist"
+    "clean": "rimraf ./dist"
   },
-  "keywords": [],
+  "keywords": [
+    "aerie",
+    "time",
+    "utils",
+    "NASA",
+    "JPL"
+  ],
   "dependencies": {
     "lodash-es": "^4.17.21",
     "postgres-interval": "^4.0.2",
@@ -27,6 +42,7 @@
   "devDependencies": {
     "@types/lodash-es": "^4.17.12",
     "@types/node": "^22.13.16",
+    "rimraf": "^5.0.5",
     "typescript": "^5.8.2"
   }
 }

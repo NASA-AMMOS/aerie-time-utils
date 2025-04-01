@@ -16,12 +16,13 @@ const time_js_1 = require("./enums/time.js");
     `);
 });
 (0, vitest_1.test)('convertUTCToMs', () => {
+    var _a;
     // standard date conversion
     (0, vitest_1.expect)((0, timeUtils_js_1.pgUTCToMs)('2024-01-01T00:00:00Z')).toEqual(1704067200000);
     // DOY doesn't work
     (0, vitest_1.expect)((0, timeUtils_js_1.pgUTCToMs)('2024-001T00:00:00Z')).toEqual(NaN);
     // conversion to DOY is fine if the time zone ("Z") is excluded
-    (0, vitest_1.expect)((0, timeUtils_js_1.pgUTCToMs)((0, timeUtils_js_1.convertDoyToYmd)('2024-001T00:00:00') ?? '')).toEqual(1704067200000);
+    (0, vitest_1.expect)((0, timeUtils_js_1.pgUTCToMs)((_a = (0, timeUtils_js_1.convertDoyToYmd)('2024-001T00:00:00')) !== null && _a !== void 0 ? _a : '')).toEqual(1704067200000);
     // conversion without a timezone in the input - this is compared to a new Date object in order to use the test runner's machine's timezone (as the result of convertUTCToMs should follow *that* timezone)
     (0, vitest_1.expect)((0, timeUtils_js_1.pgUTCToMs)('2024-01-01 00:00:00')).toEqual(new Date('2024-01-01 00:00:00').getTime());
     // any other string fails
@@ -383,3 +384,4 @@ const time_js_1 = require("./enums/time.js");
     (0, vitest_1.expect)((0, timeUtils_js_1.removeDateStringMilliseconds)('2024-001T00:00:00.593')).toBe('2024-001T00:00:00');
     (0, vitest_1.expect)((0, timeUtils_js_1.removeDateStringMilliseconds)('123456.593')).toBe('123456.593');
 });
+//# sourceMappingURL=timeUtils.test.js.map
