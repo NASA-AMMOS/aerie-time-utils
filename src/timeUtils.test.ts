@@ -1,88 +1,90 @@
 import { expect, test } from 'vitest';
 import {
-  convertDoyToYmd,
-  convertDurationStringToPGInterval,
-  convertDurationStringToUs,
-  convertUsToDurationString,
-  pgUTCToMs,
+  utcFromDoyOrIso,
+  durationStringToPostgresInterval,
+  durationStringToUs,
+  usToDurationString,
+  utcToMs,
   getBalancedDuration,
   getDaysInMonth,
   getDaysInYear,
   getDoy,
-  getDoyTime,
+  isoFromJSDate,
   getDoyTimeComponents,
   getDurationTimeComponents,
-  getShortISOForDate,
+  getShortUtcForDate,
   getTimeAgo,
   getUnixEpochTime,
   isTimeBalanced,
   isTimeMax,
-  parseDoyOrYmdTime,
+  parseDoyOrIsoTime,
   parseDurationString,
-  removeDateStringMilliseconds,
+  removeUtcOrIsoStringMilliseconds,
   validateTime,
 } from './timeUtils.js';
 import { TimeTypes } from './enums/time.js';
 
-test('convertDurationStringToUs', () => {
-  expect(convertDurationStringToUs('2y 318d 6h 16m 19s 200ms 0us')).toEqual(90577779200000);
-  expect(convertDurationStringToUs('100ms -1000us')).toEqual(99000);
-  expect(convertDurationStringToUs('200ms 0us')).toEqual(200000);
-  expect(convertDurationStringToUs('30s')).toEqual(3e7);
-
-  expect(convertDurationStringToUs('300')).toEqual(300);
-  expect(() => convertDurationStringToUs('30f')).toThrowError(`Invalid time format: Must be of format:
+test('durationStringToUs', () => {
+  expect(durationStringToUs('2y 318d 6h 16m 19s 200ms 0us')).toEqual(90577779200000);
+  expect(durationStringToUs('100ms -1000us')).toEqual(99000);
+  expect(durationStringToUs('200ms 0us')).toEqual(200000);
+  expect(durationStringToUs('30s')).toEqual(3e7);
+  expect(durationStringToUs('045T10:05:02.001')).toEqual(3924302001000);
+  expect(durationStringToUs('300')).toEqual(300);
+  expect(() => durationStringToUs('30f')).toThrowError(`Invalid time format: Must be of format:
     1y 3d 2h 24m 35s 18ms 70us,
     [+/-]DOYThh:mm:ss[.sss],
     duration
     `);
 });
 
-test('convertUTCToMs', () => {
+test('utcToMs', () => {
   // standard date conversion
-  expect(pgUTCToMs('2024-01-01T00:00:00Z')).toEqual(1704067200000);
+  expect(utcToMs('2024-01-01T00:00:00Z')).toEqual(1704067200000);
 
   // DOY doesn't work
-  expect(pgUTCToMs('2024-001T00:00:00Z')).toEqual(NaN);
+  expect(utcToMs('2024-001T00:00:00Z')).toEqual(NaN);
 
   // conversion to DOY is fine if the time zone ("Z") is excluded
-  expect(pgUTCToMs(convertDoyToYmd('2024-001T00:00:00') ?? '')).toEqual(1704067200000);
+  expect(utcToMs(utcFromDoyOrIso('2024-001T00:00:00') ?? '')).toEqual(1704067200000);
 
-  // conversion without a timezone in the input - this is compared to a new Date object in order to use the test runner's machine's timezone (as the result of convertUTCToMs should follow *that* timezone)
-  expect(pgUTCToMs('2024-01-01 00:00:00')).toEqual(new Date('2024-01-01 00:00:00').getTime());
+  // conversion without a timezone in the input - this is compared to a new Date object in order to use the test runner's machine's timezone (as the result of convertutcToMs should follow *that* timezone)
+  expect(utcToMs('2024-01-01 00:00:00')).toEqual(new Date('2024-01-01 00:00:00').getTime());
 
   // any other string fails
-  expect(pgUTCToMs('not a date')).toEqual(NaN);
+  expect(utcToMs('not a date')).toEqual(NaN);
 });
 
 test('convertDurationStringToInterval', () => {
-  expect(convertDurationStringToPGInterval('2y 318d 6h 16m 19s 200ms 0us')).toEqual(
+  expect(durationStringToPostgresInterval('2y 318d 6h 16m 19s 200ms 0us')).toEqual(
     '2 years 318 days 6 hours 16 minutes 19 seconds 200 milliseconds',
   );
-  expect(convertDurationStringToPGInterval('1d 5h 23m 0s 300ms')).toEqual('1 day 5 hours 23 minutes 300 milliseconds');
-  expect(convertDurationStringToPGInterval('1d -5h')).toEqual('19 hours');
-  expect(convertDurationStringToPGInterval('- 5h 23m 0s 300ms')).toEqual('-5 hours -23 minutes -300 milliseconds');
+  expect(durationStringToPostgresInterval('1d 5h 23m 0s 300ms')).toEqual('1 day 5 hours 23 minutes 300 milliseconds');
+  expect(durationStringToPostgresInterval('1d -5h')).toEqual('19 hours');
+  expect(durationStringToPostgresInterval('- 5h 23m 0s 300ms')).toEqual('-5 hours -23 minutes -300 milliseconds');
+  expect(durationStringToPostgresInterval('30')).toEqual('30 microseconds');
+  expect(durationStringToPostgresInterval('001T00:01:00') ).toEqual('1 day 1 minute')
 
-  expect(() => convertDurationStringToUs('30f')).toThrowError(`Invalid time format: Must be of format:
+  expect(() => durationStringToUs('30f')).toThrowError(`Invalid time format: Must be of format:
     1y 3d 2h 24m 35s 18ms 70us,
     [+/-]DOYThh:mm:ss[.sss],
     duration
     `);
 });
 
-test('convertUsToDurationString', () => {
-  expect(convertUsToDurationString(90577779200000)).toEqual('2y 318d 6h 16m 19s 200ms');
-  expect(convertUsToDurationString(200000)).toEqual('200ms');
-  expect(convertUsToDurationString(3e7)).toEqual('30s');
-  expect(convertUsToDurationString(-8.64e10)).toEqual('- 1d');
+test('usToDurationString', () => {
+  expect(usToDurationString(90577779200000)).toEqual('2y 318d 6h 16m 19s 200ms');
+  expect(usToDurationString(200000)).toEqual('200ms');
+  expect(usToDurationString(3e7)).toEqual('30s');
+  expect(usToDurationString(-8.64e10)).toEqual('- 1d');
 });
 
-test('convertDoyToYmd', () => {
-  expect(convertDoyToYmd('2023-001T00:10:12', false)).toEqual('2023-01-01T00:10:12Z');
-  expect(convertDoyToYmd('2023-001T00:00:00', false)).toEqual('2023-01-01T00:00:00Z');
-  expect(convertDoyToYmd('2023-032T00:00:00', false)).toEqual('2023-02-01T00:00:00Z');
-  expect(convertDoyToYmd('2023-048T10:32:44.123', true)).toEqual('2023-02-17T10:32:44.123Z');
-  expect(convertDoyToYmd('2023-04-10T10:32:44.123', true)).toEqual('2023-04-10T10:32:44.123Z');
+test('utcFromDoyOrIso', () => {
+  expect(utcFromDoyOrIso('2023-001T00:10:12', false)).toEqual('2023-01-01T00:10:12Z');
+  expect(utcFromDoyOrIso('2023-001T00:00:00', false)).toEqual('2023-01-01T00:00:00Z');
+  expect(utcFromDoyOrIso('2023-032T00:00:00', false)).toEqual('2023-02-01T00:00:00Z');
+  expect(utcFromDoyOrIso('2023-048T10:32:44.123', true)).toEqual('2023-02-17T10:32:44.123Z');
+  expect(utcFromDoyOrIso('2023-04-10T10:32:44.123', true)).toEqual('2023-04-10T10:32:44.123Z');
 });
 
 test('getDaysInMonth', () => {
@@ -119,8 +121,8 @@ test('getDoyTimeComponents', () => {
   });
 });
 
-test('getDoyTime', () => {
-  const doyTime = getDoyTime(new Date(1577779200000));
+test('isoFromJSDate', () => {
+  const doyTime = isoFromJSDate(new Date(1577779200000));
   expect(doyTime).toEqual('2019-365T08:00:00');
 });
 
@@ -129,8 +131,8 @@ test('getUnixEpochTime', () => {
   expect(unixEpochTime).toEqual(1577779200000);
 });
 
-test('parseDoyOrYmdTime', () => {
-  expect(parseDoyOrYmdTime('2019-365T08:00:00.1234')).toEqual({
+test('parseDoyOrIsoTime', () => {
+  expect(parseDoyOrIsoTime('2019-365T08:00:00.1234')).toEqual({
     doy: 365,
     hour: 8,
     min: 0,
@@ -140,7 +142,7 @@ test('parseDoyOrYmdTime', () => {
     year: 2019,
   });
 
-  expect(parseDoyOrYmdTime('2019-01-20T08:10:03.9')).toEqual({
+  expect(parseDoyOrIsoTime('2019-01-20T08:10:03.9')).toEqual({
     day: 20,
     hour: 8,
     min: 10,
@@ -151,7 +153,7 @@ test('parseDoyOrYmdTime', () => {
     year: 2019,
   });
 
-  expect(parseDoyOrYmdTime('2022-01-2T00:00:00')).toEqual({
+  expect(parseDoyOrIsoTime('2022-01-2T00:00:00')).toEqual({
     day: 2,
     hour: 0,
     min: 0,
@@ -162,7 +164,7 @@ test('parseDoyOrYmdTime', () => {
     year: 2022,
   });
 
-  expect(parseDoyOrYmdTime('2022-10-2T00:00:00')).toEqual({
+  expect(parseDoyOrIsoTime('2022-10-2T00:00:00')).toEqual({
     day: 2,
     hour: 0,
     min: 0,
@@ -173,7 +175,7 @@ test('parseDoyOrYmdTime', () => {
     year: 2022,
   });
 
-  expect(parseDoyOrYmdTime('012T03:01:30.920')).toEqual({
+  expect(parseDoyOrIsoTime('012T03:01:30.920')).toEqual({
     days: 12,
     hours: 3,
     isNegative: false,
@@ -184,7 +186,7 @@ test('parseDoyOrYmdTime', () => {
     years: 0,
   });
 
-  expect(parseDoyOrYmdTime('-112T13:41:00')).toEqual({
+  expect(parseDoyOrIsoTime('-112T13:41:00')).toEqual({
     days: 112,
     hours: 13,
     isNegative: true,
@@ -195,8 +197,8 @@ test('parseDoyOrYmdTime', () => {
     years: 0,
   });
 
-  expect(parseDoyOrYmdTime('2019-365T08:80:00.1234')).toEqual(null);
-  expect(parseDoyOrYmdTime('2022-20-2T00:00:00')).toEqual(null);
+  expect(parseDoyOrIsoTime('2019-365T08:80:00.1234')).toEqual(null);
+  expect(parseDoyOrIsoTime('2022-20-2T00:00:00')).toEqual(null);
 });
 
 test('getTimeAgo', () => {
@@ -214,8 +216,8 @@ test('getTimeAgo', () => {
   );
 });
 
-test('getShortISOForDate', () => {
-  expect(getShortISOForDate(new Date('2023-05-23T00:00:00.000Z'))).toEqual('2023-05-23T00:00:00');
+test('getShortUtcForDate', () => {
+  expect(getShortUtcForDate(new Date('2023-05-23T00:00:00.000Z'))).toEqual('2023-05-23T00:00:00');
 });
 
 test('parseDurationString', () => {
@@ -399,29 +401,30 @@ test('getDurationTimeComponents', () => {
 });
 
 test('isTimeBalanced', () => {
-  expect(isTimeBalanced('2024-001T00:00:00', TimeTypes.ABSOLUTE)).toBe(true);
-  expect(isTimeBalanced('2024-001T12:90:00', TimeTypes.ABSOLUTE)).toBe(false);
-  expect(isTimeBalanced('9999-365T23:59:60.999', TimeTypes.ABSOLUTE)).toBe(false);
-  expect(isTimeBalanced('2024-365T23:59:60', TimeTypes.ABSOLUTE)).toBe(false);
-  expect(isTimeBalanced('2023-363T23:19:30', TimeTypes.ABSOLUTE)).toBe(true);
-  expect(isTimeBalanced('0000-000T00:00:00', TimeTypes.ABSOLUTE)).toBe(false);
-  expect(isTimeBalanced('0000-000T24:60:60', TimeTypes.ABSOLUTE)).toBe(false);
-  expect(isTimeBalanced('001T12:43:20.000', TimeTypes.RELATIVE)).toBe(true);
-  expect(isTimeBalanced('09:04:00.340', TimeTypes.RELATIVE)).toBe(true);
-  expect(isTimeBalanced('001T23:59:60.000', TimeTypes.RELATIVE)).toBe(false);
-  expect(isTimeBalanced('365T23:59:60.000', TimeTypes.RELATIVE)).toBe(false);
-  expect(isTimeBalanced('24:60:60', TimeTypes.RELATIVE)).toBe(false);
-  expect(isTimeBalanced('+001T12:43:20.000', TimeTypes.EPOCH)).toBe(true);
-  expect(isTimeBalanced('-09:04:00.340', TimeTypes.EPOCH)).toBe(true);
-  expect(isTimeBalanced('-001T23:59:60.000', TimeTypes.EPOCH)).toBe(false);
-  expect(isTimeBalanced('-365T23:59:60.000', TimeTypes.EPOCH)).toBe(false);
-  expect(isTimeBalanced('365T22:59:60.000', TimeTypes.EPOCH)).toBe(false);
+  expect(isTimeBalanced('2024-001T00:00:00', TimeTypes.ISO_ORDINAL_TIME)).toBe(true);
+  expect(isTimeBalanced('2024-001T12:90:00', TimeTypes.ISO_ORDINAL_TIME)).toBe(false);
+  expect(isTimeBalanced('9999-365T23:59:60.999', TimeTypes.ISO_ORDINAL_TIME)).toBe(false);
+  expect(isTimeBalanced('2024-365T23:59:60', TimeTypes.ISO_ORDINAL_TIME)).toBe(false);
+  expect(isTimeBalanced('2023-363T23:19:30', TimeTypes.ISO_ORDINAL_TIME)).toBe(true);
+  expect(isTimeBalanced('0000-000T00:00:00', TimeTypes.ISO_ORDINAL_TIME)).toBe(false);
+  expect(isTimeBalanced('0000-000T24:60:60', TimeTypes.ISO_ORDINAL_TIME)).toBe(false);
+  expect(isTimeBalanced('001T12:43:20.000', TimeTypes.DOY_TIME)).toBe(true);
+  expect(isTimeBalanced('09:04:00.340', TimeTypes.DOY_TIME)).toBe(true);
+  expect(isTimeBalanced('001T23:59:60.000', TimeTypes.DOY_TIME)).toBe(false);
+  expect(isTimeBalanced('365T23:59:60.000', TimeTypes.DOY_TIME)).toBe(false);
+  expect(isTimeBalanced('24:60:60', TimeTypes.DOY_TIME)).toBe(false);
+  expect(isTimeBalanced('+001T12:43:20.000', TimeTypes.DOY_TIME)).toBe(true);
+  expect(isTimeBalanced('-09:04:00.340', TimeTypes.DOY_TIME)).toBe(true);
+  expect(isTimeBalanced('-001T23:59:60.000', TimeTypes.DOY_TIME)).toBe(false);
+  expect(isTimeBalanced('-365T23:59:60.000', TimeTypes.DOY_TIME)).toBe(false);
+  expect(isTimeBalanced('365T22:59:60.000', TimeTypes.DOY_TIME)).toBe(false);
 });
 
 test('getBalancedDuration', () => {
   expect(getBalancedDuration('001T23:59:60.1')).toBe('002T00:00:00.100');
   expect(getBalancedDuration('24:60:60')).toBe('001T01:01:00.000');
   expect(getBalancedDuration('1')).toBe('00:00:01.000');
+  expect(getBalancedDuration('-10')).toBe('-00:00:10.000');
   expect(getBalancedDuration('45600')).toBe('12:40:00.000');
   expect(getBalancedDuration('-001T00:59:10.000')).toBe('-001T00:59:10.000');
   expect(getBalancedDuration('-365T22:59:60.999')).toBe('-365T23:00:00.999');
@@ -430,31 +433,34 @@ test('getBalancedDuration', () => {
 });
 
 test('isTimeMax', () => {
-  expect(isTimeMax('9999-365T23:59:60.999', TimeTypes.ABSOLUTE)).toBe(true);
-  expect(isTimeMax('365T23:59:60.999', TimeTypes.RELATIVE)).toBe(true);
-  expect(isTimeMax('365T23:59:60.000', TimeTypes.RELATIVE)).toBe(true);
-  expect(isTimeMax('-365T23:59:60.999', TimeTypes.EPOCH)).toBe(true);
-  expect(isTimeMax('365T22:59:60.999', TimeTypes.EPOCH)).toBe(false);
+  expect(isTimeMax('9999-365T23:59:60.999', TimeTypes.ISO_ORDINAL_TIME)).toBe(true);
+  expect(isTimeMax('365T23:59:60.999', TimeTypes.DOY_TIME)).toBe(true);
+  expect(isTimeMax('365T23:59:60.000', TimeTypes.DOY_TIME)).toBe(true);
+  expect(isTimeMax('-365T23:59:60.999', TimeTypes.DOY_TIME)).toBe(true);
+  expect(isTimeMax('365T22:59:60.999', TimeTypes.DOY_TIME)).toBe(false);
+  expect(isTimeMax('2023-10-27T10:30:00Z', TimeTypes.ISO_8601_UTC_TIME)).toBe(false);
 });
 
 test('validateTime', () => {
-  expect(validateTime('2024-001T00:00:00', TimeTypes.ABSOLUTE)).toBe(true);
-  expect(validateTime('2024-001T', TimeTypes.ABSOLUTE)).toBe(false);
-  expect(validateTime('12:90:00', TimeTypes.ABSOLUTE)).toBe(false);
-  expect(validateTime('-001T23:59:60.000', TimeTypes.RELATIVE)).toBe(false);
-  expect(validateTime('365T23:59:60.000', TimeTypes.RELATIVE)).toBe(true);
-  expect(validateTime('-03:59:60.000', TimeTypes.RELATIVE)).toBe(false);
-  expect(validateTime('+03:59:60.000', TimeTypes.RELATIVE)).toBe(false);
-  expect(validateTime('03:59:60.190', TimeTypes.RELATIVE)).toBe(true);
-  expect(validateTime('2023-365T23:59:60', TimeTypes.EPOCH)).toBe(false);
-  expect(validateTime('2023-365T23:59:60', TimeTypes.EPOCH)).toBe(false);
-  expect(validateTime('-001T23:59:60.000', TimeTypes.EPOCH)).toBe(true);
-  expect(validateTime('365T23:59:60.000', TimeTypes.EPOCH)).toBe(true);
-  expect(validateTime('+03:59:60.000', TimeTypes.EPOCH)).toBe(true);
-  expect(validateTime('3:59:60', TimeTypes.EPOCH)).toBe(false);
+  expect(validateTime('2024-001T00:00:00', TimeTypes.ISO_ORDINAL_TIME)).toBe(true);
+  expect(validateTime('2024-001T', TimeTypes.ISO_ORDINAL_TIME)).toBe(false);
+  expect(validateTime('12:90:00', TimeTypes.ISO_ORDINAL_TIME)).toBe(false);
+  expect(validateTime('-001T23:59:60.000', TimeTypes.DOY_TIME)).toBe(true);
+  expect(validateTime('365T23:59:60.000', TimeTypes.DOY_TIME)).toBe(true);
+  expect(validateTime('-03:59:60.000', TimeTypes.DOY_TIME)).toBe(true);
+  expect(validateTime('+03:59:60.000', TimeTypes.DOY_TIME)).toBe(true);
+  expect(validateTime('03:59:60.190', TimeTypes.DOY_TIME)).toBe(true);
+  expect(validateTime('2023-365T23:59:60', TimeTypes.DOY_TIME)).toBe(false);
+  expect(validateTime('2023-365T23:59:60', TimeTypes.DOY_TIME)).toBe(false);
+  expect(validateTime('-001T23:59:60.000', TimeTypes.DOY_TIME)).toBe(true);
+  expect(validateTime('365T23:59:60.000', TimeTypes.DOY_TIME)).toBe(true);
+  expect(validateTime('+03:59:60.000', TimeTypes.DOY_TIME)).toBe(true);
+  expect(validateTime('3:59:60', TimeTypes.DOY_TIME)).toBe(false);
+  expect(validateTime('2023-10-27T10:30:00Z', TimeTypes.ISO_8601_UTC_TIME)).toBe(true);
 });
 
-test('removeDateStringMilliseconds', () => {
-  expect(removeDateStringMilliseconds('2024-001T00:00:00.593')).toBe('2024-001T00:00:00');
-  expect(removeDateStringMilliseconds('123456.593')).toBe('123456.593');
+test('removeUtcOrIsoStringMilliseconds', () => {
+  expect(removeUtcOrIsoStringMilliseconds('2024-001T00:00:00.593')).toBe('2024-001T00:00:00');
+  expect(removeUtcOrIsoStringMilliseconds('2023-10-27T10:30:00.12Z')).toBe('2023-10-27T10:30:00');
+  expect(removeUtcOrIsoStringMilliseconds('123456.593')).toBe('123456.593');
 });
