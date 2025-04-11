@@ -1,0 +1,27 @@
+name: Node.js CI
+
+on:
+  push:
+    branches:
+      - '**' # Matches any branch
+  pull_request:
+    branches:
+      - '**' # Matches any branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo (aerie-time-utils)
+        uses: actions/checkout@v4
+      - name: Use Node.js 22.13.1
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.1
+          cache: 'npm'
+      - name: Install dependencies (aerie-time-utils)
+        run: npm ci
+      - name: Build Repo (aerie-time-utils)
+        run: npm run build --if-present
+      - name: Test Repo (aerie-time-utils)
+        run: npm test
