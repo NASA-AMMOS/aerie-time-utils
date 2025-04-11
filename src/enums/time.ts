@@ -8,9 +8,10 @@ export enum TIME_MS {
   YEAR = 31557600000,
 }
 export enum TimeTypes {
-  ABSOLUTE = 'absolute',
-  EPOCH = 'epoch',
-  EPOCH_SIMPLE = 'epoch_simple',
-  RELATIVE = 'relative',
-  RELATIVE_SIMPLE = 'relative_simple',
+  ISO_ORDINAL_TIME = "ISO_ORDINAL_TIME",
+  SIGNED_SECOND_TIME = "SIGNED_SECOND_TIME",
+  SIGNED_DOY_TIME = "SIGNED_DOY_TIME",
+  DOY_TIME = "DOY_TIME",
+  SECOND_TIME = "SECOND_TIME",
+  ISO_8601_UTC_TIME = "ISO_8601_UTC_TIME",
 }
