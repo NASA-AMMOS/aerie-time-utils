@@ -3,6 +3,7 @@
       "target": "ES2019",
       "module": "CommonJS",
       "outDir": "dist/cjs",
+      "baseUrl": "src",
       "strict": true,
       "moduleResolution": "node",
       "esModuleInterop": true,
@@ -12,6 +13,11 @@
       "declarationMap": true,
       "sourceMap": true,
     },
-    "include": ["./"],
-    "exclude": ["./node_modules","./dist","./test"]
+    "include": [
+      "src/**/*.ts",
+    ],
+    "exclude": [
+      "./node_modules",
+      "./dist","./test"
+    ]
   }
