@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import {
-  utcFromDoyOrIso,
+  convertDoyOrIsoToUtc,
   durationStringToPostgresInterval,
   durationStringToUs,
   usToDurationString,
@@ -46,7 +46,7 @@ test('utcToMs', () => {
   expect(utcToMs('2024-001T00:00:00Z')).toEqual(NaN);
 
   // conversion to DOY is fine if the time zone ("Z") is excluded
-  expect(utcToMs(utcFromDoyOrIso('2024-001T00:00:00') ?? '')).toEqual(1704067200000);
+  expect(utcToMs(convertDoyOrIsoToUtc('2024-001T00:00:00') ?? '')).toEqual(1704067200000);
 
   // conversion without a timezone in the input - this is compared to a new Date object in order to use the test runner's machine's timezone (as the result of convertutcToMs should follow *that* timezone)
   expect(utcToMs('2024-01-01 00:00:00')).toEqual(new Date('2024-01-01 00:00:00').getTime());
@@ -79,12 +79,14 @@ test('usToDurationString', () => {
   expect(usToDurationString(-8.64e10)).toEqual('- 1d');
 });
 
-test('utcFromDoyOrIso', () => {
-  expect(utcFromDoyOrIso('2023-001T00:10:12', false)).toEqual('2023-01-01T00:10:12Z');
-  expect(utcFromDoyOrIso('2023-001T00:00:00', false)).toEqual('2023-01-01T00:00:00Z');
-  expect(utcFromDoyOrIso('2023-032T00:00:00', false)).toEqual('2023-02-01T00:00:00Z');
-  expect(utcFromDoyOrIso('2023-048T10:32:44.123', true)).toEqual('2023-02-17T10:32:44.123Z');
-  expect(utcFromDoyOrIso('2023-04-10T10:32:44.123', true)).toEqual('2023-04-10T10:32:44.123Z');
+test('convertDoyOrIsoToUtc', () => {
+  expect(convertDoyOrIsoToUtc('2023-001T00:10:12', false)).toEqual('2023-01-01T00:10:12Z');
+  expect(convertDoyOrIsoToUtc('2023-001T00:00:00', false)).toEqual('2023-01-01T00:00:00Z');
+  expect(convertDoyOrIsoToUtc('2023-032T00:00:00', false)).toEqual('2023-02-01T00:00:00Z');
+  expect(convertDoyOrIsoToUtc('2023-048T10:32:44.123', true)).toEqual('2023-02-17T10:32:44.123Z');
+  expect(convertDoyOrIsoToUtc('2023-04-10T10:32:44.123Z', true)).toEqual('2023-04-10T10:32:44.123Z');
+  expect(convertDoyOrIsoToUtc('2023-04-10T10:32:44.123', true)).toEqual('2023-04-10T10:32:44.123Z');
+  expect(convertDoyOrIsoToUtc('2023-048T10:32:44.123', false)).toEqual('2023-02-17T10:32:44Z');
 });
 
 test('getDaysInMonth', () => {
@@ -142,7 +144,7 @@ test('parseDoyOrIsoTime', () => {
     year: 2019,
   });
 
-  expect(parseDoyOrIsoTime('2019-01-20T08:10:03.9')).toEqual({
+  expect(parseDoyOrIsoTime('2019-01-20T08:10:03.9Z')).toEqual({
     day: 20,
     hour: 8,
     min: 10,
@@ -153,7 +155,7 @@ test('parseDoyOrIsoTime', () => {
     year: 2019,
   });
 
-  expect(parseDoyOrIsoTime('2022-01-2T00:00:00')).toEqual({
+  expect(parseDoyOrIsoTime('2022-01-02T00:00:00Z')).toEqual({
     day: 2,
     hour: 0,
     min: 0,
@@ -164,7 +166,7 @@ test('parseDoyOrIsoTime', () => {
     year: 2022,
   });
 
-  expect(parseDoyOrIsoTime('2022-10-2T00:00:00')).toEqual({
+  expect(parseDoyOrIsoTime('2022-10-02T00:00:00Z')).toEqual({
     day: 2,
     hour: 0,
     min: 0,
@@ -197,7 +199,15 @@ test('parseDoyOrIsoTime', () => {
     years: 0,
   });
 
-  expect(parseDoyOrIsoTime('2019-365T08:80:00.1234')).toEqual(null);
+  expect(parseDoyOrIsoTime('2019-365T08:80:00.1234')).toEqual({
+    doy: 365,
+    hour: 8,
+    min: 80,
+    ms: 123.4,
+    sec: 0,
+    time: "08:80:00.1234",
+    year: 2019,
+  });
   expect(parseDoyOrIsoTime('2022-20-2T00:00:00')).toEqual(null);
 });
 
@@ -430,6 +440,7 @@ test('getBalancedDuration', () => {
   expect(getBalancedDuration('-365T22:59:60.999')).toBe('-365T23:00:00.999');
   expect(getBalancedDuration('-1')).toBe('-00:00:01.000');
   expect(getBalancedDuration('+190')).toBe('00:03:10.000');
+  expect(getBalancedDuration('00:00:00.001')).toBe('00:00:00.001');
 });
 
 test('isTimeMax', () => {
