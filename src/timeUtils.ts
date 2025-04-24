@@ -46,14 +46,14 @@ export function isTimeMax(time: string, type: TimeTypes): boolean {
   switch (type) {
     case TimeTypes.ISO_ORDINAL_TIME:
     case TimeTypes.ISO_8601_UTC_TIME: {
-      const year = (parseDoyOrIsoTime(isoFromJSDate(new Date(getUnixEpochTime(time)))) as ParsedDoyString)?.year;
+      const year = (parseDoyOrIsoTime(isoFromJSDate(new Date(convertIsoToUnixEpoch(time)))) as ParsedDoyString)?.year;
       return year ? year > MAX_UTC_YEAR : true;
     }
     case TimeTypes.DOY_TIME: {
       const duration = parseDurationString(time);
       const originalYear = parseInt(convertDurationToDoy(duration).slice(0, 4));
       const year = (
-        parseDoyOrIsoTime(isoFromJSDate(new Date(getUnixEpochTime(convertDurationToDoy(duration))))) as ParsedDoyString
+        parseDoyOrIsoTime(isoFromJSDate(new Date(convertIsoToUnixEpoch(convertDurationToDoy(duration))))) as ParsedDoyString
       )?.year;
       return originalYear !== year;
     }
@@ -74,7 +74,7 @@ export function isTimeMax(time: string, type: TimeTypes): boolean {
 export function isTimeBalanced(time: string, type: TimeTypes): boolean {
   switch (type) {
     case TimeTypes.ISO_ORDINAL_TIME: {
-      const balancedTime = parseDoyOrIsoTime(isoFromJSDate(new Date(getUnixEpochTime(time)))) as ParsedDoyString;
+      const balancedTime = parseDoyOrIsoTime(isoFromJSDate(new Date(convertIsoToUnixEpoch(time)))) as ParsedDoyString;
       const originalTime = parseDoyOrIsoTime(time) as ParsedDoyString;
       if (balancedTime === null || originalTime === null) {
         return false;
@@ -325,8 +325,9 @@ function convertDurationToDoy(duration: ParsedDurationString): string {
   const minutes = String(duration.minutes).padStart(2, '0');
   const seconds = String(duration.seconds).padStart(2, '0');
   const milliseconds = String(duration.milliseconds).padStart(3,'0');
+  const microseconds = duration.microseconds ? String(duration.microseconds).padStart(3,'0') : '';
 
-  return `${years}-${day.toString().padStart(3, '0')}T${hours}:${minutes}:${seconds}.${milliseconds}`;
+  return `${years}-${day.toString().padStart(3, '0')}T${hours}:${minutes}:${seconds}.${milliseconds}${microseconds}`;
 }
 
 /**
@@ -342,7 +343,7 @@ function convertDurationToDoy(duration: ParsedDurationString): string {
  */
 export function getBalancedDuration(duration: string): string {
   const parsedDuration = parseDurationString(duration, 'seconds');
-  const balancedTime = isoFromJSDate(new Date(getUnixEpochTime(convertDurationToDoy(parsedDuration))));
+  const balancedTime = isoFromJSDate(new Date(convertIsoToUnixEpoch(convertDurationToDoy(parsedDuration))));
   const parsedBalancedTime = parseDoyOrIsoTime(balancedTime) as ParsedDoyString;
   const shouldIncludeDay = parsedDuration.days > 0 || parsedBalancedTime.doy > 1;
 
@@ -731,7 +732,7 @@ export function getDurationTimeComponents(duration: ParsedDurationString): Durat
  * isoFromJSDate(new Date(1577779200123)) // returns "2019-365T08:00:00.123"
  * isoFromJSDate(new Date(1577779200123), false) // returns "2019-365T08:00:00"
  *
- * @note Inverse of getUnixEpochTime.
+ * @note Inverse of convertIsoToUnixEpoch.
  * @note Milliseconds will be dropped if they are all zeros or if includeMsecs is false.
  */
 export function isoFromJSDate(date: Date, includeMsecs = true): string {
@@ -821,8 +822,8 @@ export function getPostgresIntervalInMs(postgresInterval: string | null | undefi
  *
  */
 export function getPostgresIntervalFromIsoRange(startTime: string, endTime: string): string {
-  const startTimeMs = getUnixEpochTime(startTime);
-  const endTimeMs = getUnixEpochTime(endTime);
+  const startTimeMs = convertIsoToUnixEpoch(startTime);
+  const endTimeMs = convertIsoToUnixEpoch(endTime);
   return getPostgresIntervalUnixEpochTime(startTimeMs, endTimeMs);
 }
 
@@ -871,17 +872,19 @@ export function getPostgresIntervalUnixEpochTime(startTimeMs: number, endTimeMs:
 /**
  * Get a Unix epoch time in milliseconds given a ISO Ordinal and ISO 8601 UTC timestamp string.
  *
- * @function getUnixEpochTime
+ * NOTE: microseconds will be dropped and are not supported
+ * 
+ * @function convertIsoToUnixEpoch
  * @param {string} isoOrUtcTime - The ISO Ordinal and ISO 8601 UTC timestamp string in the format "YYYY-DOYTHH:MM:SS[.mmm]" or "YYYY-MM-DDTHH:mm:ssZ".
  * @returns {number} The Unix epoch time in milliseconds. Returns 0 if the timestamp is invalid.
  *
  * @example
- * getUnixEpochTime('2019-365T08:00:00.000') // returns 1577779200000
- * getUnixEpochTime('2023-12-27T10:30:00Z') // returns 1577779200000
+ * convertIsoToUnixEpoch('2019-365T08:00:00.000') // returns 1577779200000
+ * convertIsoToUnixEpoch('2023-12-27T10:30:00Z') // returns 1577779200000
  * 
- * @note Inverse of getDoyTime.
+ * @note Inverse of getDoyTime.   // 00:00:00.1001
  */
-export function getUnixEpochTime(isoOrUtcTime: string): number {
+export function convertIsoToUnixEpoch(isoOrUtcTime: string): number {
   let match = ISO_ORDINAL_TIME_REGEX.exec(isoOrUtcTime);
   if (match && match.groups) {
     const { year, doy, hr, mins, secs, ms = '0'} = match.groups;
@@ -919,13 +922,13 @@ export function getUnixEpochTime(isoOrUtcTime: string): number {
  * @example
  * const startTime = '2023-01-01T12:00:00Z';
  * const interval = '1 day 2 hours 30 minutes 15 seconds 500 milliseconds';
- * const epochTime = getUnixEpochTimeFromPostgresInterval(startTime, interval);
+ * const epochTime = convertIsoToUnixEpochFromPostgresInterval(startTime, interval);
  * console.log(epochTime); // Output: (Unix epoch time in ms)
  *
  */
-export function getUnixEpochTimeFromPostgresInterval(utcTime: string, postgresInterval: string, includeMsecs = true): number {
+export function convertIsoToUnixEpochFromPostgresInterval(utcTime: string, postgresInterval: string, includeMsecs = true): number {
   const doyTime = isoFromUTCAndPostgresInterval(utcTime, postgresInterval, includeMsecs);
-  return getUnixEpochTime(doyTime);
+  return convertIsoToUnixEpoch(doyTime);
 }
 
 /**

@@ -14,7 +14,7 @@ import {
   getDurationTimeComponents,
   getShortUtcForDate,
   getTimeAgo,
-  getUnixEpochTime,
+  convertIsoToUnixEpoch,
   isTimeBalanced,
   isTimeMax,
   parseDoyOrIsoTime,
@@ -128,19 +128,19 @@ test('isoFromJSDate', () => {
   expect(doyTime).toEqual('2019-365T08:00:00');
 });
 
-test('getUnixEpochTime', () => {
-  const unixEpochTime = getUnixEpochTime('2019-365T08:00:00.000');
-  expect(unixEpochTime).toEqual(1577779200000);
+test('convertIsoToUnixEpoch', () => {
+  expect(convertIsoToUnixEpoch('2019-365T08:00:00.000')).toEqual(1577779200000);
+  expect(convertIsoToUnixEpoch('2019-365T08:00:00.0001')).toEqual(0);
 });
 
 test('parseDoyOrIsoTime', () => {
-  expect(parseDoyOrIsoTime('2019-365T08:00:00.1234')).toEqual({
+  expect(parseDoyOrIsoTime('2019-365T08:00:00.123')).toEqual({
     doy: 365,
     hour: 8,
     min: 0,
-    ms: 123.4,
+    ms: 123,
     sec: 0,
-    time: '08:00:00.1234',
+    time: '08:00:00.123',
     year: 2019,
   });
 
@@ -199,13 +199,13 @@ test('parseDoyOrIsoTime', () => {
     years: 0,
   });
 
-  expect(parseDoyOrIsoTime('2019-365T08:80:00.1234')).toEqual({
+  expect(parseDoyOrIsoTime('2019-365T08:80:00.123')).toEqual({
     doy: 365,
     hour: 8,
     min: 80,
-    ms: 123.4,
+    ms: 123,
     sec: 0,
-    time: "08:80:00.1234",
+    time: "08:80:00.123",
     year: 2019,
   });
   expect(parseDoyOrIsoTime('2022-20-2T00:00:00')).toEqual(null);
@@ -335,6 +335,17 @@ test('parseDurationString', () => {
     hours: 24,
     isNegative: false,
     microseconds: 0,
+    milliseconds: 0,
+    minutes: 0,
+    seconds: 0,
+    years: 0,
+  });
+
+  expect(parseDurationString('24',"microseconds")).toEqual({
+    days: 0,
+    hours: 0,
+    isNegative: false,
+    microseconds: 24,
     milliseconds: 0,
     minutes: 0,
     seconds: 0,

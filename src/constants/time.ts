@@ -16,7 +16,7 @@
  * // ms (optional): one or more digits for milliseconds
  */
 export const ISO_ORDINAL_TIME_REGEX =
-  /^(?<year>(\d{4}))-(?<doy>(\d{3}))T(?<hr>(\d{2})):(?<mins>(\d{2})):(?<secs>(\d{2}))(?:\.(?<ms>\d+))?$/;
+  /^(?<year>(\d{4}))-(?<doy>(\d{3}))T(?<hr>(\d{2})):(?<mins>(\d{2})):(?<secs>(\d{2}))(?:\.(?<ms>\d{1,3}))?$/;
 
 /**
  * Regex for parsing ISO 8601 UTC date and time format (YYYY-MM-DDTHH:mm:ss.SSSZ).
@@ -38,7 +38,7 @@ export const ISO_ORDINAL_TIME_REGEX =
  * // ms (optional): one or more digits for milliseconds
  */
 export const ISO_8601_UTC_REGEX =
-  /^(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})T(?<hr>\d{2}):(?<mins>\d{2}):(?<secs>\d{2})(?:\.(?<ms>\d+))?Z$/;
+  /^(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})T(?<hr>\d{2}):(?<mins>\d{2}):(?<secs>\d{2})(?:\.(?<ms>\d{1,3}))?Z$/;
 
 /**
  * Regex for parsing day-of-year (DOY) and time format ([+/-]DDD[T]HH:mm:ss.SSS).
@@ -61,7 +61,7 @@ export const ISO_8601_UTC_REGEX =
  * // ms (optional): one or more digits for milliseconds
  */
 export const DOY_TIME_REGEX =
-  /^((?<sign>[+-]?))(?<doy>(\d{3}))?(T)?(?<hr>(\d{2})):(?<mins>(\d{2})):(?<secs>(\d{2}))(?:\.(?<ms>\d+))?$/;
+  /^((?<sign>[+-]?))(?<doy>(\d{3}))?(T)?(?<hr>(\d{2})):(?<mins>(\d{2})):(?<secs>(\d{2}))(?:\.(?<ms>\d{1,3}))?$/;
 
 /**
  * Regex for parsing time represented as seconds from a reference point,
@@ -81,7 +81,7 @@ export const DOY_TIME_REGEX =
  * // ms (optional): one or more digits for milliseconds
  */
 export const SECOND_TIME_REGEX =
-  /^(?<sign>([+-]?))(?<secs>(\d+))(?:\.(?<ms>\d+))?$/;
+  /^(?<sign>([+-]?))(?<secs>(\d+))(?:\.(?<ms>\d{1,3}))?$/;
 
 /**
  * Maximum valid year for UTC dates.
