@@ -30,7 +30,8 @@
   "scripts": {
     "build": "npm run clean; tsc -p tsconfig.json && tsc -p tsconfig.esm.json",
     "test": "vitest run",
-    "clean": "rimraf ./dist"
+    "clean": "rimraf ./dist",
+     "reformat": "prettier --write ./src"
   },
   "keywords": [
     "aerie",
@@ -41,7 +42,8 @@
   ],
   "dependencies": {
     "lodash-es": "^4.17.21",
-    "postgres-interval": "^4.0.2"
+    "postgres-interval": "^4.0.2",
+    "prettier": "^3.5.3"
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.12",
