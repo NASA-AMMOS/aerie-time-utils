@@ -3,7 +3,12 @@
   "version": "1.0.1",
   "title": "Aerie Time Utility",
   "description": "Provides helper functions to process time values within the Aerie ecosystem",
+  "bugs": "https://github.com/NASA-AMMOS/aerie/issues",
   "author": "NASA/JPL",
+  "contributors": [
+    "Ryan Goetz <ryan.r.goetz@jpl.nasa.gov>",
+    "Bryan Duran <bryan.duran@jpl.nasa.gov>"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -52,5 +57,8 @@
     "rimraf": "^5.0.5",
     "typescript": "^5.8.2",
     "vitest": "^3.1.1"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
