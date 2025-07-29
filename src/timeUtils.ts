@@ -59,7 +59,7 @@ export function isTimeMax(time: string, type: TimeTypes): boolean {
     case TimeTypes.ISO_8601_UTC_TIME: {
       const year = (
         parseDoyOrIsoTime(
-          isoFromJSDate(new Date(convertIsoToUnixEpoch(time))),
+          isoFromJSDate(new Date(convertIsoToUnixEpoch(time)))
         ) as ParsedDoyString
       )?.year;
       return year ? year > MAX_UTC_YEAR : true;
@@ -70,8 +70,8 @@ export function isTimeMax(time: string, type: TimeTypes): boolean {
       const year = (
         parseDoyOrIsoTime(
           isoFromJSDate(
-            new Date(convertIsoToUnixEpoch(convertDurationToDoy(duration))),
-          ),
+            new Date(convertIsoToUnixEpoch(convertDurationToDoy(duration)))
+          )
         ) as ParsedDoyString
       )?.year;
       return originalYear !== year;
@@ -94,7 +94,7 @@ export function isTimeBalanced(time: string, type: TimeTypes): boolean {
   switch (type) {
     case TimeTypes.ISO_ORDINAL_TIME: {
       const balancedTime = parseDoyOrIsoTime(
-        isoFromJSDate(new Date(convertIsoToUnixEpoch(time))),
+        isoFromJSDate(new Date(convertIsoToUnixEpoch(time)))
       ) as ParsedDoyString;
       const originalTime = parseDoyOrIsoTime(time) as ParsedDoyString;
       if (balancedTime === null || originalTime === null) {
@@ -195,7 +195,7 @@ export function parseDurationString(
     | "minutes"
     | "seconds"
     | "milliseconds"
-    | "microseconds" = "microseconds",
+    | "microseconds" = "microseconds"
 ): ParsedDurationString | never {
   const validNegationRegex = `((?<isNegative>-))?`;
   const validDurationValueRegex = `([+-]?)(\\d+)(\\.\\d+)?`;
@@ -208,7 +208,7 @@ export function parseDurationString(
   const validMicrosecondsDurationRegex = `(?:\\s*(?<microseconds>${validDurationValueRegex})us)`;
 
   const fullValidDurationRegex = new RegExp(
-    `^${validNegationRegex}${validYearsDurationRegex}?${validDaysDurationRegex}?${validHoursDurationRegex}?${validMinutesDurationRegex}?${validSecondsDurationRegex}?${validMillisecondsDurationRegex}?${validMicrosecondsDurationRegex}?$`,
+    `^${validNegationRegex}${validYearsDurationRegex}?${validDaysDurationRegex}?${validHoursDurationRegex}?${validMinutesDurationRegex}?${validSecondsDurationRegex}?${validMillisecondsDurationRegex}?${validMicrosecondsDurationRegex}?$`
   );
 
   let matches = durationString.match(fullValidDurationRegex);
@@ -240,7 +240,7 @@ export function parseDurationString(
   }
 
   const durationTime = parseDoyOrIsoTime(
-    durationString,
+    durationString
   ) as ParsedDurationString;
   if (durationTime) {
     return durationTime;
@@ -377,9 +377,9 @@ function convertDurationToDoy(duration: ParsedDurationString): string {
  */
 export function getBalancedDuration(duration: string): string {
   const parsedDuration = parseDurationString(duration, "seconds");
-  const balancedTime = isoFromJSDate(
-    new Date(convertIsoToUnixEpoch(convertDurationToDoy(parsedDuration))),
-  );
+  const unix = convertIsoToUnixEpoch(convertDurationToDoy(parsedDuration));
+  const fractionalMS = `${unix}`.split(".")[1] ?? null;
+  const balancedTime = isoFromJSDate(new Date(unix));
   const parsedBalancedTime = parseDoyOrIsoTime(balancedTime) as ParsedDoyString;
   const shouldIncludeDay =
     parsedDuration.days > 0 || parsedBalancedTime.doy > 1;
@@ -392,7 +392,7 @@ export function getBalancedDuration(duration: string): string {
   const minutes = String(parsedBalancedTime.min).padStart(2, "0");
   const seconds = String(parsedBalancedTime.sec).padStart(2, "0");
   const milliseconds = String(parsedBalancedTime.ms).padStart(3, "0");
-  return `${sign}${day}${hour}:${minutes}:${seconds}.${milliseconds}`;
+  return `${sign}${day}${hour}:${minutes}:${seconds}.${milliseconds}${fractionalMS ? fractionalMS : ""}`;
 }
 
 function addUnit(value: number, unit: string, isNegative: boolean) {
@@ -416,7 +416,7 @@ function addUnit(value: number, unit: string, isNegative: boolean) {
  */
 export function convertDoyOrIsoToUtc(
   isoOrDoyString: string,
-  includeMsecs = true,
+  includeMsecs = true
 ): string | null {
   // A UTC time so just return it no conversion needed. Add 'Z' if needed
   const matches =
@@ -429,7 +429,7 @@ export function convertDoyOrIsoToUtc(
   }
 
   const parsedDoy: ParsedDoyString = parseDoyOrIsoTime(
-    isoOrDoyString,
+    isoOrDoyString
   ) as ParsedDoyString;
 
   if (parsedDoy !== null) {
@@ -441,7 +441,7 @@ export function convertDoyOrIsoToUtc(
         parsedDoy.hour,
         parsedDoy.min,
         parsedDoy.sec,
-        parsedDoy.ms,
+        parsedDoy.ms
       );
       const ymdString = `${[
         date.getFullYear(),
@@ -473,10 +473,10 @@ export function convertDoyOrIsoToUtc(
  * durationStringToPostgresInterval('001T00:01:00') // returns '1 day 1 minute'
  */
 export function durationStringToPostgresInterval(
-  duration: string,
+  duration: string
 ): string | never {
   const parsedDuration = parseDurationString(
-    usToDurationString(durationStringToUs(duration)),
+    usToDurationString(durationStringToUs(duration))
   );
 
   const {
@@ -521,7 +521,7 @@ export function durationStringToPostgresInterval(
  * Converts an ISO 8601 (UTC) string to the number of milliseconds since the epoch (January 1, 1970 UTC).
  * This is useful for rendering purposes where you need to convert a date string into a timestamp.
  *
- * @param {string} utc - A valid ISO UTC date string in 'YYYY-MM-DDTHH:mm:ss' format.
+ * @param {string} utc - A valid ISO UTC date string in 'YYYY-MM-DDTHH:mm:ss[.mmm...]' format.
  * @returns {number} - The number of milliseconds since the Unix epoch (1970-01-01T00:00:00Z).
  *
  * @example
@@ -530,7 +530,17 @@ export function durationStringToPostgresInterval(
  */
 export function utcToMs(utc: string): number {
   const d = new Date(utc);
-  return d.getTime();
+  let totalms = d.getTime();
+  const match = ISO_8601_UTC_REGEX.exec(utc);
+
+  if (match && match.groups) {
+    const { ms } = match.groups; // e.g., "123456" from "00:00:00.123456Z"
+    if (ms) {
+      totalms += parseFractionalMS(ms);
+    }
+  }
+
+  return totalms;
 }
 
 /**
@@ -603,7 +613,7 @@ export function durationStringToUs(duration: string): number | never {
  */
 export function usToDurationString(
   durationUs: number,
-  includeZeros: boolean = false,
+  includeZeros: boolean = false
 ): string {
   const usPerYear = 3.154e13;
   const usPerDay = 8.64e10;
@@ -730,6 +740,7 @@ export function getDoy(date: Date): number {
 
 /**
  * Get the DOY (Day of Year) time components for a given JavaScript Date object.
+ * NOTE: The Javascript Date object does not support milliseconds beyond 3 digits
  *
  * @function getDoyTimeComponents
  * @param {Date} date - The JavaScript Date object from which to extract DOY components.
@@ -790,7 +801,7 @@ export function getDoyTimeComponents(date: Date) {
  *
  */
 export function getDurationTimeComponents(
-  duration: ParsedDurationString,
+  duration: ParsedDurationString
 ): DurationTimeComponents {
   return {
     days: duration.days !== 0 ? String(duration.days).padStart(3, "0") : "",
@@ -853,7 +864,7 @@ export function isoFromJSDate(date: Date, includeMsecs = true): string {
 export function isoFromUTCAndPostgresInterval(
   utcStartTime: string,
   postgresInterval: string,
-  includeMsecs = true,
+  includeMsecs = true
 ): string {
   const startDate = new Date(utcStartTime);
   const parsedInterval = parseInterval(postgresInterval);
@@ -889,7 +900,7 @@ export function isoFromUTCAndPostgresInterval(
  *
  */
 export function getPostgresIntervalInMs(
-  postgresInterval: string | null | undefined,
+  postgresInterval: string | null | undefined
 ): number {
   if (
     postgresInterval !== null &&
@@ -923,7 +934,7 @@ export function getPostgresIntervalInMs(
  */
 export function getPostgresIntervalFromIsoRange(
   startTime: string,
-  endTime: string,
+  endTime: string
 ): string {
   const startTimeMs = convertIsoToUnixEpoch(startTime);
   const endTimeMs = convertIsoToUnixEpoch(endTime);
@@ -953,7 +964,7 @@ export function getPostgresIntervalFromIsoRange(
  */
 export function getPostgresIntervalUnixEpochTime(
   startTimeMs: number,
-  endTimeMs: number,
+  endTimeMs: number
 ): string {
   const differenceMs = endTimeMs - startTimeMs;
 
@@ -981,7 +992,7 @@ export function getPostgresIntervalUnixEpochTime(
  * NOTE: microseconds will be dropped and are not supported
  *
  * @function convertIsoToUnixEpoch
- * @param {string} isoOrUtcTime - The ISO Ordinal and ISO 8601 UTC timestamp string in the format "YYYY-DOYTHH:MM:SS[.mmm]" or "YYYY-MM-DDTHH:mm:ssZ".
+ * @param {string} isoOrUtcTime - The ISO Ordinal and ISO 8601 UTC timestamp string in the format "YYYY-DOYTHH:MM:SS[.mmm...]" or "YYYY-MM-DDTHH:mm:ssZ".
  * @returns {number} The Unix epoch time in milliseconds. Returns 0 if the timestamp is invalid.
  *
  * @example
@@ -993,8 +1004,12 @@ export function getPostgresIntervalUnixEpochTime(
 export function convertIsoToUnixEpoch(isoOrUtcTime: string): number {
   let match = ISO_ORDINAL_TIME_REGEX.exec(isoOrUtcTime);
   if (match && match.groups) {
-    const { year, doy, hr, mins, secs, ms = "0" } = match.groups;
-    return Date.UTC(+year, 0, +doy, +hr, +mins, +secs, +ms);
+    let { year, doy, hr, mins, secs, ms = "0" } = match.groups;
+    let fractionalMS = parseFractionalMS(ms);
+    return (
+      Date.UTC(+year, 0, +doy, +hr, +mins, +secs, +ms.substring(0, 3)) +
+      fractionalMS
+    );
   }
   match = ISO_8601_UTC_REGEX.exec(isoOrUtcTime);
   if (match && match.groups) {
@@ -1010,7 +1025,7 @@ export function convertIsoToUnixEpoch(isoOrUtcTime: string): number {
       parseInt(hr, 10),
       parseInt(mins, 10),
       parseInt(secs, 10),
-      parseInt(ms, 10),
+      parseInt(ms, 10)
     );
   }
 
@@ -1035,18 +1050,18 @@ export function convertIsoToUnixEpoch(isoOrUtcTime: string): number {
 export function convertIsoToUnixEpochFromPostgresInterval(
   utcTime: string,
   postgresInterval: string,
-  includeMsecs = true,
+  includeMsecs = true
 ): number {
   const doyTime = isoFromUTCAndPostgresInterval(
     utcTime,
     postgresInterval,
-    includeMsecs,
+    includeMsecs
   );
   return convertIsoToUnixEpoch(doyTime);
 }
 
 /**
- * Parses an ISO 8601 (UTC) string (YYYY-MM-DDTHH:mm:ssZ), a ISO Ordinal string (YYYY-DDDDTHH:mm:ss), a DOY string (DOYTHH:mm:ss), or a ISO 8601 Duration (P1Y2D) into its separate components.
+ * Parses an ISO 8601 (UTC) string (YYYY-MM-DDTHH:mm:ss[.mmm...]Z), a ISO Ordinal string (YYYY-DDDDTHH:mm:ss[.mmm...]), a DOY string (DOYTHH:mm:ss[.mmm...]), or a ISO 8601 Duration (P1Y2D) into its separate components.
  *
  * @param {string} dateString - The ISO 8601 (UTC), ISO Ordinal string, or DOY Duration string to parse.
  * @param {number} [numDecimals=6] - The number of decimal places to include for milliseconds.
@@ -1061,7 +1076,7 @@ export function convertIsoToUnixEpochFromPostgresInterval(
  */
 export function parseDoyOrIsoTime(
   dateString: string,
-  numDecimals = 6,
+  numDecimals = 6
 ): null | ParsedDoyString | ParsedYmdString | ParsedDurationString {
   dateString = dateString ?? "";
   const matchesOrdinal = ISO_ORDINAL_TIME_REGEX.exec(dateString);
@@ -1128,7 +1143,7 @@ export function parseDoyOrIsoTime(
  * parseDOYDurationTime('invalid-string'); // returns null
  */
 export function parseDOYDurationTime(
-  doyTime: string,
+  doyTime: string
 ): ParsedDurationString | null {
   const matches = DOY_TIME_REGEX.exec(doyTime);
   if (matches !== null) {
@@ -1148,14 +1163,17 @@ export function parseDOYDurationTime(
       const minuteNum = parseInt(mins);
       const secondsNum = parseInt(secs);
       const millisecondNum = parseFloat(
-        (parseFloat(`.${ms}`) * 1000).toFixed(6),
+        (parseFloat(`.${ms.substring(0, 3)}`) * 1000).toFixed(6)
+      );
+      const microsecondsNum = parseFloat(
+        (parseFloat(`.${ms.substring(3)}`) * 1000).toFixed(6)
       );
 
       return {
         days: doy !== undefined ? parseInt(doy) : 0,
         hours: hoursNum,
         isNegative: sign !== "" && sign !== "+",
-        microseconds: 0,
+        microseconds: microsecondsNum ? microsecondsNum : 0,
         milliseconds: millisecondNum,
         minutes: minuteNum,
         seconds: secondsNum,
@@ -1164,6 +1182,28 @@ export function parseDOYDurationTime(
     }
   }
   return null;
+}
+
+/**
+ * Parses a string representing fractional milliseconds and returns the corresponding number.
+ *
+ * @param ms - A string representing a fractional part of a millisecond (e.g., "00:00:00.123456" -> 123456).
+ * @returns The parsed fraction of a millisecond as a number.
+ */
+function parseFractionalMS(ms: string): number {
+  if (ms.length > 3) {
+    const extraPrecisionString = ms.substring(3); // e.g., "456" from "123456"
+    const extraPrecisionValue = parseInt(extraPrecisionString, 10);
+
+    // split fractional ms off from ms
+    ms = ms.substring(0, 3);
+
+    if (!isNaN(extraPrecisionValue)) {
+      // Calculate fractional milliseconds (e.g., 456 / 1000 = 0.456)
+      return extraPrecisionValue / Math.pow(10, extraPrecisionString.length);
+    }
+  }
+  return 0;
 }
 
 /**
@@ -1185,7 +1225,7 @@ export function parseDOYDurationTime(
 export function getTimeAgo(
   date: Date,
   comparisonDate: Date = new Date(),
-  formatAsDateAfterMS: number = 1000 * 60 * 60 * 23,
+  formatAsDateAfterMS: number = 1000 * 60 * 60 * 23
 ) {
   const comparisonDateTime = comparisonDate.getTime();
   const diff = comparisonDateTime - date.getTime();
@@ -1222,7 +1262,7 @@ export function getShortUtcForDate(date: Date) {
  */
 export function getShortTimeZoneName() {
   return new Intl.DateTimeFormat("en-US", { timeZoneName: "short" }).format(
-    new Date(),
+    new Date()
   );
 }
 
@@ -1243,7 +1283,7 @@ export function getTimeZoneName() {
   const parts = formatter?.formatToParts(Date.now());
   // extract the actual value from the formatter
   const timeZoneName = parts.find(
-    (formatted) => formatted.type === "timeZoneName",
+    (formatted) => formatted.type === "timeZoneName"
   );
   if (timeZoneName) {
     return timeZoneName.value;
@@ -1265,7 +1305,7 @@ export function getTimeZoneName() {
  *
  */
 export function removeUtcOrIsoStringMilliseconds(
-  utcOrIsoString: string,
+  utcOrIsoString: string
 ): string {
   if (validateTime(utcOrIsoString, TimeTypes.ISO_ORDINAL_TIME)) {
     return utcOrIsoString.split(".")[0];
