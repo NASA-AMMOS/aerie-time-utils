@@ -534,9 +534,9 @@ export function utcToMs(utc: string): number {
   const match = ISO_8601_UTC_REGEX.exec(utc);
 
   if (match && match.groups) {
-    const { ms } = match.groups; // e.g., "123456" from "00:00:00.123456Z"
-    if (ms) {
-      totalms += parseFractionalMS(ms);
+    const { us } = match.groups; // e.g., "123456" from "00:00:00.123456Z"
+    if (us) {
+      totalms += parseInt(us) / 1000.0;
     }
   }
 
@@ -1004,28 +1004,40 @@ export function getPostgresIntervalUnixEpochTime(
 export function convertIsoToUnixEpoch(isoOrUtcTime: string): number {
   let match = ISO_ORDINAL_TIME_REGEX.exec(isoOrUtcTime);
   if (match && match.groups) {
-    let { year, doy, hr, mins, secs, ms = "0" } = match.groups;
-    let fractionalMS = parseFractionalMS(ms);
+    let { year, doy, hr, mins, secs, ms = "0", us = "0" } = match.groups;
     return (
-      Date.UTC(+year, 0, +doy, +hr, +mins, +secs, +ms.substring(0, 3)) +
-      fractionalMS
+      Date.UTC(+year, 0, +doy, +hr, +mins, +secs, +ms) +
+      parseInt(us.padEnd(3, "0")) / 1000
     );
   }
+
   match = ISO_8601_UTC_REGEX.exec(isoOrUtcTime);
   if (match && match.groups) {
-    const { year, month, day, hr, mins, secs, ms = "0" } = match.groups;
+    const {
+      year,
+      month,
+      day,
+      hr,
+      mins,
+      secs,
+      ms = "0",
+      us = "0",
+    } = match.groups;
 
     // Month is 0-indexed in Date.UTC
     const utcMonth = parseInt(month, 10) - 1;
 
-    return Date.UTC(
-      parseInt(year, 10),
-      utcMonth,
-      parseInt(day, 10),
-      parseInt(hr, 10),
-      parseInt(mins, 10),
-      parseInt(secs, 10),
-      parseInt(ms, 10)
+    return (
+      Date.UTC(
+        parseInt(year, 10),
+        utcMonth,
+        parseInt(day, 10),
+        parseInt(hr, 10),
+        parseInt(mins, 10),
+        parseInt(secs, 10),
+        parseInt(ms, 10)
+      ) +
+      parseInt(us.padEnd(3, "0")) / 1000
     );
   }
 
@@ -1064,7 +1076,6 @@ export function convertIsoToUnixEpochFromPostgresInterval(
  * Parses an ISO 8601 (UTC) string (YYYY-MM-DDTHH:mm:ss[.mmm...]Z), a ISO Ordinal string (YYYY-DDDDTHH:mm:ss[.mmm...]), a DOY string (DOYTHH:mm:ss[.mmm...]), or a ISO 8601 Duration (P1Y2D) into its separate components.
  *
  * @param {string} dateString - The ISO 8601 (UTC), ISO Ordinal string, or DOY Duration string to parse.
- * @param {number} [numDecimals=6] - The number of decimal places to include for milliseconds.
  * @returns {null|ParsedDoyString|ParsedYmdString|ParsedDurationString} An object containing the parsed date/time components, or null if parsing fails.
  *
  * @example
@@ -1075,8 +1086,7 @@ export function convertIsoToUnixEpochFromPostgresInterval(
  *
  */
 export function parseDoyOrIsoTime(
-  dateString: string,
-  numDecimals = 6
+  dateString: string
 ): null | ParsedDoyString | ParsedYmdString | ParsedDurationString {
   dateString = dateString ?? "";
   const matchesOrdinal = ISO_ORDINAL_TIME_REGEX.exec(dateString);
@@ -1096,15 +1106,17 @@ export function parseDoyOrIsoTime(
         mins = "0",
         secs = "0",
         ms = "0",
+        us = "0",
       } = {},
     } = matches;
 
     const partialReturn = {
       hour: parseInt(hr),
       min: parseInt(mins),
-      ms: parseFloat((parseFloat(`.${ms}`) * msPerSecond).toFixed(numDecimals)),
+      us: parseInt(parseInt(us.padEnd(3, "0")).toFixed(3)),
+      ms: parseInt((parseFloat(`.${ms}`) * 1000).toFixed(3)),
       sec: parseInt(secs),
-      time: `${hr}:${mins}:${secs}${ms !== "0" ? `.${ms}` : ""}`,
+      time: `${hr}:${mins}:${secs}${ms !== "0" ? `.${ms}` : ""}${us !== "0" ? `${us}` : ""}`,
       year: parseInt(year),
     };
 
@@ -1156,24 +1168,23 @@ export function parseDOYDurationTime(
           mins = "0",
           secs = "0",
           ms = "0",
+          us = "0",
         } = {},
       } = matches;
 
       const hoursNum = parseInt(hr);
       const minuteNum = parseInt(mins);
       const secondsNum = parseInt(secs);
-      const millisecondNum = parseFloat(
-        (parseFloat(`.${ms.substring(0, 3)}`) * 1000).toFixed(6)
-      );
-      const microsecondsNum = parseFloat(
-        (parseFloat(`.${ms.substring(3)}`) * 1000).toFixed(6)
+      const millisecondNum = parseInt((parseFloat(`.${ms}`) * 1000).toFixed(3));
+      const microsecondsNum = parseInt(
+        parseInt(`${us.padEnd(3, "0")}`).toFixed(3)
       );
 
       return {
         days: doy !== undefined ? parseInt(doy) : 0,
         hours: hoursNum,
         isNegative: sign !== "" && sign !== "+",
-        microseconds: microsecondsNum ? microsecondsNum : 0,
+        microseconds: microsecondsNum,
         milliseconds: millisecondNum,
         minutes: minuteNum,
         seconds: secondsNum,
@@ -1182,28 +1193,6 @@ export function parseDOYDurationTime(
     }
   }
   return null;
-}
-
-/**
- * Parses a string representing fractional milliseconds and returns the corresponding number.
- *
- * @param ms - A string representing a fractional part of a millisecond (e.g., "00:00:00.123456" -> 123456).
- * @returns The parsed fraction of a millisecond as a number.
- */
-function parseFractionalMS(ms: string): number {
-  if (ms.length > 3) {
-    const extraPrecisionString = ms.substring(3); // e.g., "456" from "123456"
-    const extraPrecisionValue = parseInt(extraPrecisionString, 10);
-
-    // split fractional ms off from ms
-    ms = ms.substring(0, 3);
-
-    if (!isNaN(extraPrecisionValue)) {
-      // Calculate fractional milliseconds (e.g., 456 / 1000 = 0.456)
-      return extraPrecisionValue / Math.pow(10, extraPrecisionString.length);
-    }
-  }
-  return 0;
 }
 
 /**

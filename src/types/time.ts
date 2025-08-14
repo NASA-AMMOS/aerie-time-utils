@@ -2,6 +2,7 @@ export type ParsedDoyString = {
   doy: number;
   hour: number;
   min: number;
+  us: number;
   ms: number;
   sec: number;
   time: string;
