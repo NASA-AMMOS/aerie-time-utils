@@ -386,13 +386,13 @@ export function getBalancedDuration(duration: string): string {
 
   const sign = parsedDuration.isNegative ? "-" : "";
   const day = shouldIncludeDay
-    ? `${String(parsedBalancedTime.doy - (parsedDuration.days > 0 ? 0 : 1)).padStart(3, "0")}T`
+    ? `${String(parsedBalancedTime.doy - (parsedDuration.days > 0 ? 0 : 1)).padStart(3, "0")}`
     : "";
   const hour = String(parsedBalancedTime.hour).padStart(2, "0");
   const minutes = String(parsedBalancedTime.min).padStart(2, "0");
   const seconds = String(parsedBalancedTime.sec).padStart(2, "0");
   const milliseconds = String(parsedBalancedTime.ms).padStart(3, "0");
-  return `${sign}${day}${hour}:${minutes}:${seconds}.${milliseconds}${fractionalMS ? fractionalMS : ""}`;
+  return `${sign}${day ? `${day}T` : ""}${hour}:${minutes}:${seconds}.${milliseconds}${fractionalMS ? fractionalMS : ""}`;
 }
 
 function addUnit(value: number, unit: string, isNegative: boolean) {
