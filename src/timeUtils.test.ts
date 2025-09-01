@@ -626,6 +626,8 @@ test("getBalancedDuration", () => {
   expect(getBalancedDuration("001T23:59:60.100456")).toBe(
     "002T00:00:00.100456"
   );
+  expect(getBalancedDuration("1m 60s")).toBe("00:02:00.000");
+  expect(getBalancedDuration("365T23:59:60.999")).toBe("366T00:00:00.999");
 });
 
 test("isTimeMax", () => {
@@ -633,7 +635,7 @@ test("isTimeMax", () => {
     true
   );
   expect(isTimeMax("365T23:59:60.999", TimeTypes.DOY_TIME)).toBe(true);
-  expect(isTimeMax("365T23:59:60.000", TimeTypes.DOY_TIME)).toBe(true);
+  expect(isTimeMax("365T23:59:59.000", TimeTypes.DOY_TIME)).toBe(false);
   expect(isTimeMax("-365T23:59:60.999", TimeTypes.DOY_TIME)).toBe(true);
   expect(isTimeMax("365T22:59:60.999", TimeTypes.DOY_TIME)).toBe(false);
   expect(isTimeMax("2023-10-27T10:30:00Z", TimeTypes.ISO_8601_UTC_TIME)).toBe(

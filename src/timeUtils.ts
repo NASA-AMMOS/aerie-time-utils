@@ -65,16 +65,7 @@ export function isTimeMax(time: string, type: TimeTypes): boolean {
       return year ? year > MAX_UTC_YEAR : true;
     }
     case TimeTypes.DOY_TIME: {
-      const duration = parseDurationString(time);
-      const originalYear = parseInt(convertDurationToDoy(duration).slice(0, 4));
-      const year = (
-        parseDoyOrIsoTime(
-          isoFromJSDate(
-            new Date(convertIsoToUnixEpoch(convertDurationToDoy(duration)))
-          )
-        ) as ParsedDoyString
-      )?.year;
-      return originalYear !== year;
+      return parseDurationString(getBalancedDuration(time)).days >= 366;
     }
     default:
       return false;
@@ -385,9 +376,20 @@ export function getBalancedDuration(duration: string): string {
     parsedDuration.days > 0 || parsedBalancedTime.doy > 1;
 
   const sign = parsedDuration.isNegative ? "-" : "";
-  const day = shouldIncludeDay
+  const originalYear = parseInt(
+    convertDurationToDoy(parsedDuration).slice(0, 4)
+  );
+
+  let day = shouldIncludeDay
     ? `${String(parsedBalancedTime.doy - (parsedDuration.days > 0 ? 0 : 1)).padStart(3, "0")}`
     : "";
+
+  // 365T25:00:00 rolls over to 1T01:00:00 when balanced
+  // we want to keep incrementing so it should be 366T01:00:00
+  if (parsedBalancedTime.year !== originalYear) {
+    day = `${parsedDuration.days + 1}`;
+  }
+
   const hour = String(parsedBalancedTime.hour).padStart(2, "0");
   const minutes = String(parsedBalancedTime.min).padStart(2, "0");
   const seconds = String(parsedBalancedTime.sec).padStart(2, "0");
