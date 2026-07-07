@@ -12,16 +12,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repo (aerie-time-utils)
+      - name: Checkout Repo (plandev-time-utils)
         uses: actions/checkout@v4
       - name: Use Node.js 22.13.1
         uses: actions/setup-node@v4
         with:
           node-version: 22.13.1
           cache: 'npm'
-      - name: Install dependencies (aerie-time-utils)
+      - name: Install dependencies (plandev-time-utils)
         run: npm ci
-      - name: Build Repo (aerie-time-utils)
+      - name: Build Repo (plandev-time-utils)
         run: npm run build --if-present
-      - name: Test Repo (aerie-time-utils)
+      - name: Test Repo (plandev-time-utils)
         run: npm test
