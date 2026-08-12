@@ -46,8 +46,10 @@ jobs:
 
       - name: Install dependencies
         # use `npm ci` for reproducible installs, fails if package & lock files are out of sync
-        # install without running lifecycle scripts
-        run: npm ci --ignore-scripts
+        # install without running lifecycle scripts, then run only scripts approved in package.json's `allowScripts`
+        run: |
+          npm ci --ignore-scripts
+          npm rebuild --strict-allow-scripts
 
       - name: Build
         run: npm run build
