@@ -66,9 +66,13 @@
         "access": "public"
     },
     "devEngines": {
-      "packageManager": {
-        "name": "npm",
-        "onFail": "warn"
-      }
+        "packageManager": {
+            "name": "npm",
+            "onFail": "warn"
+        }
+    },
+    "allowScripts": {
+        "esbuild@0.25.9": true,
+        "fsevents@2.3.3": true
     }
 }
