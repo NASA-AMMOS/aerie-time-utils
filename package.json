@@ -1,9 +1,9 @@
 {
-  "name": "@nasa-jpl/aerie-time-utils",
-  "version": "1.0.2",
-  "title": "Aerie Time Utility",
-  "description": "Provides helper functions to process time values within the Aerie ecosystem",
-  "bugs": "https://github.com/NASA-AMMOS/aerie/issues",
+  "name": "@nasa-jpl/plandev-time-utils",
+  "version": "1.1.0",
+  "title": "Plandev Time Utility",
+  "description": "Provides helper functions to process time values within the Plandev ecosystem",
+  "bugs": "https://github.com/NASA-AMMOS/plandev/issues",
   "author": "NASA/JPL",
   "contributors": [
     "Ryan Goetz <ryan.r.goetz@jpl.nasa.gov>",
@@ -12,7 +12,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/NASA-AMMOS/aerie-time-utils.git"
+    "url": "https://github.com/NASA-AMMOS/plandev-time-utils.git"
   },
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -40,7 +40,8 @@
     "reformat": "prettier --write ./src"
   },
   "keywords": [
-    "aerie",
+    "plandev",
+    "seqdev",
     "time",
     "utils",
     "NASA",
@@ -58,7 +59,20 @@
     "typescript": "^5.8.2",
     "vitest": "^3.1.1"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "publishConfig": {
     "access": "public"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "npm",
+      "onFail": "warn"
+    }
+  },
+  "allowScripts": {
+    "esbuild@0.25.9": true,
+    "fsevents@2.3.3": true
   }
 }
